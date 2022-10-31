@@ -26,11 +26,24 @@ start_service() {
 
 	procd_open_instance "$CONF"
 	procd_set_param command "$PROG" run
-	[ -n "$confdir" ] && procd_append_param command -confdir "$confdir"
+	[ -n "$confdir" ] && {
+		procd_append_param command -confdir "$confdir"
+		FILE_ARR=$(find "$confdir" -type f)
+	}
 	[ -n "$conffiles" ] && {
-		for i in $conffiles
-		do
-			procd_append_param command -config "$i"
+		for i in $conffiles; do
+			if [ -z "$confdir" ]; then
+				procd_append_param command -config "$i"
+			else
+				EXISTS=0
+				for FILE in $FILE_ARR; do
+					if [ "$FILE" = "$i" ]; then
+						EXISTS=1
+						break
+					fi
+				done
+				[ $EXISTS -eq 0 ] && procd_append_param command -config "$i"
+			fi
 		done
 	}
 	[ -n "$format" ] && procd_append_param command -format "$format"
